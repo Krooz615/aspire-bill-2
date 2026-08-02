@@ -1,0 +1,8 @@
+{
+  "appId": "com.aspire.bills",
+  "appName": "Aspire Bills",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

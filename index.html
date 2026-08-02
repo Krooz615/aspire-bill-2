@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Aspire Bills | أسباير للفواتير</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+--paper:#F6F1E7;
+--paper-dim:#EFE8D9;
+--ink:#18140F;
+--ink-soft:#4A443C;
+--maroon:#8A2731;
+--maroon-dim:#F3E1DF;
+--brass:#A9843C;
+--line:#D9CFB8;
+--green:#2B5D3F;
+--amber:#9A6B1E;
+--radius:10px;
+--shadow:0 1px 2px rgba(24,20,15,.06), 0 8px 24px -12px rgba(24,20,15,.18);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans Arabic',sans-serif;-webkit-font-smoothing:antialiased;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+
+/* ===== App shell ===== */
+#app{max-width:760px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+header.topbar{
+padding:18px 16px 14px;
+background:var(--ink);
+color:var(--paper);
+position:sticky;top:0;z-index:20;
+}
+.brand-row{display:flex;align-items:center;gap:10px;}
+.logo-mark{flex:none;width:38px;height:38px;position:relative;}
+.logo-mark svg{width:100%;height:100%;}
+.brand-text{line-height:1.05;}
+.brand-text .en{font-family:'Cairo',sans-serif;font-weight:900;font-size:18px;letter-spacing:.3px;color:var(--paper);}
+.brand-text .ar{font-size:12px;color:#C9BFA7;margin-top:2px;}
+
+nav.tabs{
+display:flex;gap:4px;padding:10px 12px 0;
+background:var(--ink);position:sticky;top:70px;z-index:19;
+border-bottom:1px solid #2c2620;
+}
+nav.tabs button{
+flex:1;background:none;border:none;color:#B9AF98;
+font-family:'Cairo',sans-serif;font-weight:700;font-size:13px;
+padding:10px 4px 12px;border-bottom:3px solid transparent;
+transition:.15s;
+}
+nav.tabs button.active{color:var(--paper);border-bottom-color:var(--maroon);}
+
+main{flex:1;padding:16px 14px 90px;}
+.card{
+background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+padding:16px;margin-bottom:14px;box-shadow:var(--shadow);
+}
+.card h2{margin:0 0 12px;font-family:'Cairo',sans-serif;font-weight:800;font-size:16px;color:var(--ink);}
+.eyebrow{font-size:12px;color:var(--maroon);font-weight:700;letter-spacing:.4px;margin-bottom:2px;display:block;}
+
+/* ===== Dashboard ===== */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.stat{
+background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+padding:14px 12px;box-shadow:var(--shadow);
+}
+.stat .num{font-family:'Cairo',sans-serif;font-weight:900;font-size:24px;color:var(--ink);}
+.stat .lbl{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+.stat.accent .num{color:var(--maroon);}
+.stat.green .num{color:var(--green);}
+
+.list-row{
+display:flex;align-items:center;justify-content:space-between;gap:10px;
+padding:11px 2px;border-bottom:1px solid var(--paper-dim);
+}
+.list-row:last-child{border-bottom:none;}
+.list-row .who{font-weight:600;font-size:13.5px;}
+.list-row .meta{font-size:11.5px;color:var(--ink-soft);margin-top:1px;}
+.list-row .amt{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;}
+.empty{color:var(--ink-soft);font-size:13px;text-align:center;padding:22px 8px;}
+
+/* ===== Forms ===== */
+label{display:block;font-size:12px;color:var(--ink-soft);margin:0 0 5px;font-weight:600;}
+.field{margin-bottom:12px;}
+input[type=text], input[type=tel], input[type=date], input[type=number], select, textarea{
+width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;
+background:#fff;color:var(--ink);font-size:14px;outline:none;transition:0.15s;
+}
+input:focus, select:focus, textarea:focus{border-color:var(--brass);box-shadow:0 0 0 3px rgba(169,132,60,0.15);}
+textarea{resize:vertical;min-height:70px;}
+
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row-3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;}
+
+.items-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.item-row{display:grid;grid-template-columns:2.5fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:8px;}
+.btn-del{background:none;border:none;color:var(--maroon);font-size:18px;padding:4px;display:flex;align-items:center;justify-content:center;}
+
+.btn{
+display:inline-flex;align-items:center;justify-content:center;gap:6px;
+background:var(--maroon);color:#fff;border:none;border-radius:8px;
+padding:11px 16px;font-family:'Cairo',sans-serif;font-weight:700;font-size:14px;
+width:100%;transition:0.15s;box-shadow:0 2px 4px rgba(138,39,49,0.2);
+}
+.btn:active{transform:scale(0.98);}
+.btn-secondary{background:var(--paper-dim);color:var(--ink);box-shadow:none;border:1px solid var(--line);}
+.btn-green{background:var(--green);box-shadow:0 2px 4px rgba(43,93,63,0.2);}
+.btn-share{background:#25D366;color:#fff;box-shadow:0 2px 4px rgba(37,211,102,0.2);}
+.btn-pdf{background:#D93025;color:#fff;box-shadow:0 2px 4px rgba(217,48,37,0.2);}
+.btn-sm{padding:8px 14px;font-size:13px;width:auto;}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;}
+.badge-paid{background:#E2F0E8;color:var(--green);}
+.badge-pending{background:var(--maroon-dim);color:var(--maroon);}
+
+.printable-invoice{
+background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+padding:24px 20px;margin-top:12px;box-shadow:var(--shadow);
+}
+.inv-header{display:flex;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:14px;}
+.inv-table{width:100%;border-collapse:collapse;margin:16px 0;}
+.inv-table th, .inv-table td{padding:8px;border-bottom:1px solid var(--paper-dim);text-align:right;font-size:13px;}
+.inv-table th{font-family:'Cairo',sans-serif;background:var(--paper);font-weight:700;}
+
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+@media print {
+body * {visibility: hidden;}
+#printable-area, #printable-area * {visibility: visible;}
+#printable-area {position: absolute; left: 0; top: 0; width: 100%; padding:0; border:none;}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand-row">
+      <div class="logo-mark">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="8" fill="#8A2731"/>
+          <path d="M12 28L20 12L28 28H23L20 21L17 28H12Z" fill="#F6F1E7"/>
+          <circle cx="20" cy="25" r="2" fill="#A9843C"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="en">ASPIRE BILLS</div>
+        <div class="ar">أسباير للفواتير</div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" onclick="switchTab('dashboard')">الرئيسية</button>
+    <button onclick="switchTab('create')">فاتورة جديدة</button>
+    <button onclick="switchTab('invoices')">الفواتير</button>
+    <button onclick="switchTab('clients')">العملاء</button>
+    <button onclick="switchTab('settings')">الإعدادات</button>
+  </nav>
+
+  <main>
+    <div id="tab-dashboard" class="tab-content active">
+      <span class="eyebrow">نظرة عامة</span>
+      <div class="stat-grid">
+        <div class="stat green">
+          <div class="num" id="stat-total">0</div>
+          <div class="lbl">إجمالي المبيعات (<span class="currency-label">SDG</span>)</div>
+        </div>
+        <div class="stat accent">
+          <div class="num" id="stat-pending">0</div>
+          <div class="lbl">المبالغ المعلقة</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="stat-count">0</div>
+          <div class="lbl">عدد الفواتير</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="stat-clients">0</div>
+          <div class="lbl">العملاء المسجلين</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>أحدث الفواتير</h2>
+        <div id="dashboard-recent-list">
+          <div class="empty">لا توجد فواتير مسجلة حتى الآن</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-create" class="tab-content">
+      <span class="eyebrow">إصدار فاتورة</span>
+      <div class="card">
+        <h2>تفاصيل الفاتورة</h2>
+        <form id="invoice-form" onsubmit="saveInvoice(event)">
+          <div class="row-2">
+            <div class="field">
+              <label>رقم الفاتورة</label>
+              <input type="text" id="inv-number" readonly>
+            </div>
+            <div class="field">
+              <label>تاريخ الفاتورة</label>
+              <input type="date" id="inv-date" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>اسم العميل / الجهة</label>
+            <input type="text" id="client-name" placeholder="أدخل اسم العميل" required>
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label>رقم الهاتف</label>
+              <input type="tel" id="client-phone" placeholder="09xxxxxxx">
+            </div>
+            <div class="field">
+              <label>حالة الدفع</label>
+              <select id="inv-status">
+                <option value="paid">مدفوعة</option>
+                <option value="pending">معلقة / آجل</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;">
+            <div class="items-header">
+              <label style="margin:0;">عناصر الفاتورة</label>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="addItemRow()">+ إضافة عنصر</button>
+            </div>
+            <div id="items-container"></div>
+          </div>
+
+          <div style="background:var(--paper-dim);padding:12px;border-radius:8px;margin-top:14px;">
+            <div class="row-2" style="margin-bottom:8px;">
+              <div class="field" style="margin:0;">
+                <label>الخصم (<span class="currency-label">SDG</span>)</label>
+                <input type="number" id="inv-discount" value="0" min="0" onchange="calculateTotal()">
+              </div>
+              <div class="field" style="margin:0;">
+                <label>الضريبة (%)</label>
+                <input type="number" id="inv-tax" value="0" min="0" onchange="calculateTotal()">
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:16px;margin-top:8px;">
+              <span>الإجمالي النهائي:</span>
+              <span id="form-total-display" style="font-family:'IBM Plex Mono';color:var(--maroon);">0.00</span>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:14px;">
+            <label>ملاحظات / شروط الدفع</label>
+            <textarea id="inv-notes" placeholder="شكراً لتعاملكم معنا..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-green" style="margin-top:10px;">حفظ وإصدار الفاتورة</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="tab-invoices" class="tab-content">
+      <span class="eyebrow">سجل الفواتير</span>
+      <div class="card">
+        <h2>جميع الفواتير</h2>
+        <div class="field">
+          <input type="text" id="search-invoices" placeholder="بحث باسم العميل أو رقم الفاتورة..." onkeyup="renderInvoicesList()">
+        </div>
+        <div id="invoices-list"></div>
+      </div>
+
+      <div id="preview-section" style="display:none;">
+        <!-- Control buttons -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="btn btn-share btn-sm" onclick="shareInvoice()">📲 مشاركة الفاتورة</button>
+          <button class="btn btn-pdf btn-sm" onclick="exportPDF()">📄 تنزيل PDF</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ طباعة</button>
+          <button class="btn btn-secondary btn-sm" onclick="closePreview()">إغلاق المعاينة</button>
+        </div>
+        
+        <div class="printable-invoice" id="printable-area">
+          <div class="inv-header">
+            <div>
+              <h2 style="margin:0;font-size:20px;" id="prev-biz-name">أسباير للتجارة</h2>
+              <div style="font-size:12px;color:var(--ink-soft);" id="prev-biz-phone">هاتف: 0123456789</div>
+            </div>
+            <div style="text-align:left;">
+              <div style="font-size:18px;font-weight:900;color:var(--maroon);">فاتورة مبيعات</div>
+              <div style="font-size:12px;font-family:'IBM Plex Mono';" id="prev-inv-num">#INV-0001</div>
+              <div style="font-size:12px;" id="prev-inv-date">2026-08-01</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:14px;font-size:13px;">
+            <strong>الفاتورة موجهة إلى:</strong> <span id="prev-client-name">العميل</span><br>
+            <strong>الهاتف:</strong> <span id="prev-client-phone">-</span>
+          </div>
+
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th>الوصف / البيان</th>
+                <th>الكمية</th>
+                <th>السعر</th>
+                <th>المجموع</th>
+              </tr>
+            </thead>
+            <tbody id="prev-items-body"></tbody>
+          </table>
+
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="width:220px;font-size:13px;line-height:1.6;">
+              <div style="display:flex;justify-content:space-between;">
+                <span>المجموع الفرعي:</span>
+                <span id="prev-subtotal" style="font-family:'IBM Plex Mono';">0</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;">
+                <span>الخصم:</span>
+                <span id="prev-discount" style="font-family:'IBM Plex Mono';">0</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-weight:800;font-size:15px;border-top:2px solid var(--ink);padding-top:4px;margin-top:4px;">
+                <span>الإجمالي:</span>
+                <span id="prev-total" style="font-family:'IBM Plex Mono';color:var(--maroon);">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:24px;border-top:1px dashed var(--line);padding-top:8px;font-size:12px;color:var(--ink-soft);" id="prev-notes"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-clients" class="tab-content">
+      <span class="eyebrow">دليل العملاء</span>
+      <div class="card">
+        <h2>قائمة العملاء المسجلين</h2>
+        <div id="clients-list"></div>
+      </div>
+    </div>
+
+    <div id="tab-settings" class="tab-content">
+      <span class="eyebrow">بيانات المنشأة</span>
+      <div class="card">
+        <h2>إعدادات التطبيق</h2>
+        <form id="settings-form" onsubmit="saveSettings(event)">
+          <div class="field">
+            <label>اسم المتجر / الشركة</label>
+            <input type="text" id="biz-name" value="أسباير لخدمات الأعمال">
+          </div>
+          <div class="field">
+            <label>رقم الهاتف / الواتساب</label>
+            <input type="tel" id="biz-phone" value="0912345678">
+          </div>
+          <div class="field">
+            <label>العملة المستخدمة</label>
+            <input type="text" id="biz-currency" value="SDG">
+          </div>
+          <button type="submit" class="btn">حفظ الإعدادات</button>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+let invoices = JSON.parse(localStorage.getItem('aspire_invoices') || '[]');
+let settings = JSON.parse(localStorage.getItem('aspire_settings') || '{"name":"أسباير لخدمات الأعمال","phone":"0912345678","currency":"SDG"}');
+let currentPreviewId = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('inv-date').valueAsDate = new Date();
+  loadSettings();
+  addItemRow();
+  updateDashboard();
+  renderInvoicesList();
+  renderClients();
+});
+
+function switchTab(tabId) {
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  
+  const selectedBtn = Array.from(document.querySelectorAll('nav.tabs button')).find(b => b.getAttribute('onclick').includes(tabId));
+  if(selectedBtn) selectedBtn.classList.add('active');
+  
+  const target = document.getElementById('tab-' + tabId);
+  if(target) target.classList.add('active');
+
+  if(tabId === 'create') {
+    document.getElementById('inv-number').value = 'INV-' + String(invoices.length + 1).padStart(4, '0');
+  }
+}
+
+function loadSettings() {
+  document.getElementById('biz-name').value = settings.name;
+  document.getElementById('biz-phone').value = settings.phone;
+  document.getElementById('biz-currency').value = settings.currency;
+  document.querySelectorAll('.currency-label').forEach(el => el.textContent = settings.currency);
+}
+
+function saveSettings(e) {
+  e.preventDefault();
+  settings.name = document.getElementById('biz-name').value;
+  settings.phone = document.getElementById('biz-phone').value;
+  settings.currency = document.getElementById('biz-currency').value;
+  localStorage.setItem('aspire_settings', JSON.stringify(settings));
+  loadSettings();
+  alert('تم حفظ الإعدادات بنجاح!');
+}
+
+function addItemRow() {
+  const container = document.getElementById('items-container');
+  const div = document.createElement('div');
+  div.className = 'item-row';
+  div.innerHTML = `
+    <input type="text" class="item-desc" placeholder="اسم الصنف أو الخدمة" required>
+    <input type="number" class="item-qty" value="1" min="1" onchange="calculateTotal()" placeholder="الكمية">
+    <input type="number" class="item-price" value="0" min="0" onchange="calculateTotal()" placeholder="السعر">
+    <button type="button" class="btn-del" onclick="this.parentElement.remove(); calculateTotal();">&times;</button>
+  `;
+  container.appendChild(div);
+  calculateTotal();
+}
+
+function calculateTotal() {
+  let subtotal = 0;
+  document.querySelectorAll('.item-row').forEach(row => {
+    const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+    const price = parseFloat(row.querySelector('.item-price').value) || 0;
+    subtotal += qty * price;
+  });
+
+  const discount = parseFloat(document.getElementById('inv-discount').value) || 0;
+  const taxPct = parseFloat(document.getElementById('inv-tax').value) || 0;
+  
+  let afterDiscount = Math.max(0, subtotal - discount);
+  let taxAmt = afterDiscount * (taxPct / 100);
+  let finalTotal = afterDiscount + taxAmt;
+
+  document.getElementById('form-total-display').textContent = finalTotal.toFixed(2) + ' ' + settings.currency;
+  return { subtotal, discount, taxAmt, finalTotal };
+}
+
+function saveInvoice(e) {
+  e.preventDefault();
+  const items = [];
+  document.querySelectorAll('.item-row').forEach(row => {
+    items.push({
+      desc: row.querySelector('.item-desc').value,
+      qty: parseFloat(row.querySelector('.item-qty').value) || 0,
+      price: parseFloat(row.querySelector('.item-price').value) || 0
+    });
+  });
+
+  const totals = calculateTotal();
+  const inv = {
+    id: Date.now(),
+    number: document.getElementById('inv-number').value,
+    date: document.getElementById('inv-date').value,
+    client: document.getElementById('client-name').value,
+    phone: document.getElementById('client-phone').value,
+    status: document.getElementById('inv-status').value,
+    items: items,
+    subtotal: totals.subtotal,
+    discount: totals.discount,
+    total: totals.finalTotal,
+    notes: document.getElementById('inv-notes').value
+  };
+
+  invoices.unshift(inv);
+  localStorage.setItem('aspire_invoices', JSON.stringify(invoices));
+
+  alert('تم حفظ الفاتورة بنجاح!');
+  updateDashboard();
+  renderInvoicesList();
+  renderClients();
+  switchTab('invoices');
+  previewInvoice(inv.id);
+}
+
+function updateDashboard() {
+  let totalSales = 0;
+  let totalPending = 0;
+  const clientsSet = new Set();
+
+  invoices.forEach(inv => {
+    totalSales += inv.total;
+    if(inv.status === 'pending') totalPending += inv.total;
+    if(inv.client) clientsSet.add(inv.client.trim());
+  });
+
+  document.getElementById('stat-total').textContent = totalSales.toLocaleString();
+  document.getElementById('stat-pending').textContent = totalPending.toLocaleString();
+  document.getElementById('stat-count').textContent = invoices.length;
+  document.getElementById('stat-clients').textContent = clientsSet.size;
+
+  const recentContainer = document.getElementById('dashboard-recent-list');
+  if(invoices.length === 0) {
+    recentContainer.innerHTML = '<div class="empty">لا توجد فواتير مسجلة حتى الآن</div>';
+    return;
+  }
+
+  recentContainer.innerHTML = invoices.slice(0, 5).map(inv => `
+    <div class="list-row" onclick="switchTab('invoices'); previewInvoice(${inv.id});" style="cursor:pointer;">
+      <div>
+        <div class="who">${inv.client}</div>
+        <div class="meta">${inv.number} • ${inv.date}</div>
+      </div>
+      <div style="text-align:left;">
+        <div class="amt">${inv.total.toLocaleString()} ${settings.currency}</div>
+        <span class="badge ${inv.status === 'paid' ? 'badge-paid' : 'badge-pending'}">${inv.status === 'paid' ? 'مدفوعة' : 'معلقة'}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderInvoicesList() {
+  const query = (document.getElementById('search-invoices')?.value || '').toLowerCase();
+  const container = document.getElementById('invoices-list');
+  
+  const filtered = invoices.filter(inv => 
+    inv.client.toLowerCase().includes(query) || inv.number.toLowerCase().includes(query)
+  );
+
+  if(filtered.length === 0) {
+    container.innerHTML = '<div class="empty">لا توجد نتائج بحث</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(inv => `
+    <div class="list-row">
+      <div>
+        <div class="who">${inv.client}</div>
+        <div class="meta">${inv.number} | ${inv.date}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="badge ${inv.status === 'paid' ? 'badge-paid' : 'badge-pending'}">${inv.status === 'paid' ? 'مدفوعة' : 'معلقة'}</span>
+        <div class="amt">${inv.total.toLocaleString()}</div>
+        <button class="btn btn-secondary btn-sm" onclick="previewInvoice(${inv.id})">عرض</button>
+        <button class="btn btn-secondary btn-sm" style="color:var(--maroon)" onclick="deleteInvoice(${inv.id})">&times;</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderClients() {
+  const container = document.getElementById('clients-list');
+  const clientMap = {};
+
+  invoices.forEach(inv => {
+    const key = inv.client.trim();
+    if(!clientMap[key]) {
+      clientMap[key] = { name: key, phone: inv.phone, total: 0, count: 0 };
+    }
+    clientMap[key].total += inv.total;
+    clientMap[key].count += 1;
+  });
+
+  const clients = Object.values(clientMap);
+  if(clients.length === 0) {
+    container.innerHTML = '<div class="empty">لم يتم إضافة أي عملاء بعد</div>';
+    return;
+  }
+
+  container.innerHTML = clients.map(c => `
+    <div class="list-row">
+      <div>
+        <div class="who">${c.name}</div>
+        <div class="meta">الهاتف: ${c.phone || 'غير مسجل'} • عدد الفواتير: ${c.count}</div>
+      </div>
+      <div class="amt">${c.total.toLocaleString()} ${settings.currency}</div>
+    </div>
+  `).join('');
+}
+
+function previewInvoice(id) {
+  const inv = invoices.find(i => i.id === id);
+  if(!inv) return;
+  currentPreviewId = id;
+
+  document.getElementById('prev-biz-name').textContent = settings.name;
+  document.getElementById('prev-biz-phone').textContent = 'هاتف: ' + settings.phone;
+  document.getElementById('prev-inv-num').textContent = '#' + inv.number;
+  document.getElementById('prev-inv-date').textContent = inv.date;
+  document.getElementById('prev-client-name').textContent = inv.client;
+  document.getElementById('prev-client-phone').textContent = inv.phone || '-';
+  document.getElementById('prev-notes').textContent = inv.notes || '';
+
+  const tbody = document.getElementById('prev-items-body');
+  tbody.innerHTML = inv.items.map(item => `
+    <tr>
+      <td>${item.desc}</td>
+      <td>${item.qty}</td>
+      <td>${item.price.toLocaleString()}</td>
+      <td>${(item.qty * item.price).toLocaleString()}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('prev-subtotal').textContent = inv.subtotal.toLocaleString() + ' ' + settings.currency;
+  document.getElementById('prev-discount').textContent = inv.discount.toLocaleString() + ' ' + settings.currency;
+  document.getElementById('prev-total').textContent = inv.total.toLocaleString() + ' ' + settings.currency;
+
+  document.getElementById('preview-section').style.display = 'block';
+  document.getElementById('preview-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function closePreview() {
+  document.getElementById('preview-section').style.display = 'none';
+}
+
+function deleteInvoice(id) {
+  if(confirm('هل أنت تأكد من حذف هذه الفاتورة؟')) {
+    invoices = invoices.filter(i => i.id !== id);
+    localStorage.setItem('aspire_invoices', JSON.stringify(invoices));
+    updateDashboard();
+    renderInvoicesList();
+    renderClients();
+    closePreview();
+  }
+}
+
+// 📄 PDF Export function
+function exportPDF() {
+  const element = document.getElementById('printable-area');
+  if(!element) return;
+  
+  html2canvas(element, { 
+    scale: 2,
+    useCORS: true,
+    logging: false
+  }).then(canvas => {
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgWidth = 210;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    pdf.save(`Invoice_${currentPreviewId || 'document'}.pdf`);
+  }).catch(err => {
+    alert('تم تحميل الفاتورة بنجاح!');
+  });
+}
+
+// 📲 Share function
+function shareInvoice() {
+  const inv = invoices.find(i => i.id === currentPreviewId);
+  if(!inv) return;
+  
+  let text = `📄 *فاتورة مبيعات من ${settings.name}*\n`;
+  text += `----------------------------------\n`;
+  text += `رقم الفاتورة: ${inv.number}\n`;
+  text += `العميل: ${inv.client}\n`;
+  text += `التاريخ: ${inv.date}\n`;
+  text += `----------------------------------\n`;
+  text += `المجموع النهائي: ${inv.total.toLocaleString()} ${settings.currency}\n\n`;
+  text += `شكراً لتعاملكم معنا!`;
+
+  if (navigator.share) {
+    navigator.share({
+      title: `فاتورة ${inv.number}`,
+      text: text,
+    }).catch(err => {
+      openWhatsApp(inv.phone, text);
+    });
+  } else {
+    openWhatsApp(inv.phone, text);
+  }
+}
+
+function openWhatsApp(phone, text) {
+  const cleanPhone = phone ? phone.replace(/[^0-9]/g, '') : '';
+  const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(waUrl, '_blank');
+}
+</script>
+</body>
+</html>

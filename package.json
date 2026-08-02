@@ -1,0 +1,16 @@
+{
+  "name": "aspire-bills",
+  "version": "1.0.0",
+  "description": "Aspire Bills - نظام الفواتير والعملاء",
+  "main": "index.html",
+  "scripts": {
+    "build": "mkdir -p www && cp index.html www/",
+    "cap:add": "cap add android",
+    "cap:sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
+  }
+}
